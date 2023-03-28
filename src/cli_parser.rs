@@ -1,10 +1,8 @@
-use clap::ArgMatches;
-use std::vec;
-
 use crate::PROGRAM_AUTHORS;
 use crate::PROGRAM_DESCRIPTION;
 use crate::PROGRAM_NAME;
 use crate::PROGRAM_VERSION;
+use clap::ArgMatches;
 use std::path::PathBuf;
 
 const OUTPUT_FILE: &str = "output-file";
@@ -32,17 +30,15 @@ pub fn parse_cli_parameters() -> clap::ArgMatches {
                 .long("file")
                 .value_name("INFILE")
                 .help("mp3 file name")
-                .use_value_delimiter(true)
-                .value_delimiter(',')
+                .action(clap::ArgAction::Append)
                 .value_parser(clap::value_parser!(PathBuf)),
         )
         .arg(
             clap::Arg::new(INPUT_DIRECTORY)
                 .long("dir")
                 .value_name("INDIR")
-                .help("directory with mp3 files")
-                .use_value_delimiter(true)
-                .value_delimiter(',')
+                .help("directory with mp3 files (no recursion)")
+                .action(clap::ArgAction::Append)
                 .value_parser(clap::value_parser!(PathBuf)),
         )
         .group(
@@ -55,21 +51,37 @@ pub fn parse_cli_parameters() -> clap::ArgMatches {
         .get_matches()
 }
 
-pub struct CliTask{
-    pub file: Option<Vec<PathBuf>>,
-    pub dir: Option<Vec<PathBuf>>,
+pub struct FileArgs {
+    pub files: Option<Vec<PathBuf>>,
+    pub directories: Option<Vec<PathBuf>>,
     pub out: PathBuf,
 }
 
-pub fn get_cli_details(cli_args: &ArgMatches) -> CliTask{
-    let file: Option<Vec<PathBuf>> = match cli_args.contains_id(INPUT_FILE){
-        true => Some(cli_args.get_occurrences::<PathBuf>(INPUT_FILE).unwrap().map(Iterator::collect).collect()),
+pub fn get_cli_details(cli_args: &ArgMatches) -> FileArgs {
+    let file: Option<Vec<PathBuf>> = match cli_args.contains_id(INPUT_FILE) {
+        true => Some(
+            cli_args
+                .get_occurrences::<PathBuf>(INPUT_FILE)
+                .unwrap()
+                .map(Iterator::collect)
+                .collect(),
+        ),
         false => None,
     };
-    let dir: Option<Vec<PathBuf>> = match cli_args.contains_id(INPUT_DIRECTORY){
-        true => Some(cli_args.get_occurrences::<PathBuf>(INPUT_DIRECTORY).unwrap().map(Iterator::collect).collect()),
+    let dir: Option<Vec<PathBuf>> = match cli_args.contains_id(INPUT_DIRECTORY) {
+        true => Some(
+            cli_args
+                .get_occurrences::<PathBuf>(INPUT_DIRECTORY)
+                .unwrap()
+                .map(Iterator::collect)
+                .collect(),
+        ),
         false => None,
     };
     let out: PathBuf = cli_args.get_one::<PathBuf>(OUTPUT_FILE).unwrap().to_owned();
-    CliTask { file, dir, out }
+    FileArgs {
+        files: file,
+        directories: dir,
+        out,
+    }
 }
